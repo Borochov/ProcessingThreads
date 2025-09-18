@@ -7,15 +7,15 @@
 int tests_passed = 0;
 int tests_failed = 0;
 
-#define TEST(condition, message)                             \
-    do {                                                     \
-        if (condition) {                                     \
-            std::cout << "✓ PASS: " << message << std::endl; \
-            tests_passed++;                                  \
-        } else {                                             \
-            std::cout << "✗ FAIL: " << message << std::endl; \
-            tests_failed++;                                  \
-        }                                                    \
+#define TEST(condition, message)                           \
+    do {                                                   \
+        if (condition) {                                   \
+            std::cout << "PASS: " << message << std::endl; \
+            tests_passed++;                                \
+        } else {                                           \
+            std::cout << "FAIL: " << message << std::endl; \
+            tests_failed++;                                \
+        }                                                  \
     } while (0)
 
 void test_constructor() {
@@ -179,10 +179,10 @@ int main() {
         std::cout << "Tests failed: " << tests_failed << std::endl;
 
         if (tests_failed == 0) {
-            std::cout << "🎉 All basic tests passed!" << std::endl;
+            std::cout << "All basic tests passed!" << std::endl;
             return 0;
         } else {
-            std::cout << "❌ Some tests failed!" << std::endl;
+            std::cout << "Some tests failed!" << std::endl;
             return 1;
         }
     } catch (const std::exception& e) {
