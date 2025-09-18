@@ -26,7 +26,7 @@ include_directories(include)
 # Add executable
 add_executable(${PROJECT_NAME} 
     src/main.cpp
-    src/hello.cpp
+    src/queue.cpp
 )
 
 # Enable testing

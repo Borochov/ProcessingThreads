@@ -1,6 +1,5 @@
-# Simple test executable
 add_executable(test_runner test_main.cpp)
-target_link_libraries(test_runner)
-
-# Add test
+find_package(Threads REQUIRED)
+target_link_libraries(test_runner Threads::Threads)
+target_compile_features(test_runner PRIVATE cxx_std_17)
 add_test(NAME basic_test COMMAND test_runner)
