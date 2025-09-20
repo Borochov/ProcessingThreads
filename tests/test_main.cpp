@@ -358,9 +358,9 @@ int main(int argc, char* argv[]) {
         test_unique_ids();
         test_different_types();
         test_multiple_operations();
-
-        // Run new variant and thread tests
         test_data_value_variant();
+
+        // Run thread tests
         test_single_data_thread();
         test_multiple_data_threads();
 

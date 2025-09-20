@@ -95,7 +95,7 @@ class DataThread : public BaseThread {
 
                 log_generated_value(value);
 
-                // Variable sleep time based on thread ID to create different patterns
+                // Variable sleep time based on thread ID
                 std::this_thread::sleep_for(std::chrono::milliseconds(200 + (thread_id % 5) * 50));
 
             } catch (const std::exception& e) {
@@ -131,8 +131,9 @@ class DataThread : public BaseThread {
             [&message](const auto& v) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::complex<double>>) {
                     // Handle complex numbers specially
+                    char imSign = v.imag() < 0 ? '-' : '+';
                     message +=
-                        "(" + std::to_string(v.real()) + "," + std::to_string(v.imag()) + ")";
+                        "(" + std::to_string(v.real()) + " " + imSign + " " + std::to_string(abs(v.imag())) + " * i)";
                 } else {
                     // Handle int and float
                     message += std::to_string(v);
