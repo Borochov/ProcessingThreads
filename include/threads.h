@@ -5,7 +5,9 @@
 #include <complex>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <random>
+#include <sstream>
 #include <thread>
 #include <variant>
 #include <vector>
@@ -15,135 +17,108 @@
 // Data types that threads can generate
 using DataValue = std::variant<int, float, std::complex<double>>;
 
+// Arithmetic operations
+enum class Operation { ADD, SUBTRACT, MULTIPLY, DIVIDE };
+
+// Function representation
+struct ArithmeticFunction {
+    Operation op;
+    std::optional<DataValue> left_operand;   // if present, use this as left operand
+    std::optional<DataValue> right_operand;  // if present, use this as right operand
+
+    // How many arguments this function needs from the data queue
+    size_t requiredArgs() const;
+
+    // String representation of the function
+    std::string description() const;
+
+   private:
+    std::string valueToString(const DataValue& val) const;
+};
+
 // Base thread class
 class BaseThread {
    protected:
-    int thread_id;
-    std::thread worker_thread;
-    std::atomic<bool> should_stop{false};
+    int threadId;
+    std::thread workerThread;
+    std::atomic<bool> shouldStop{false};
 
     // Random number generation
     std::random_device rd;
     std::mt19937 gen;
 
    public:
-    BaseThread(int id) : thread_id(id), gen(rd()) {}
+    BaseThread(int id);
+    virtual ~BaseThread();
 
-    virtual ~BaseThread() {
-        stop();
-        if (worker_thread.joinable()) {
-            worker_thread.join();
-        }
-    }
-
-    void start() { worker_thread = std::thread(&BaseThread::work_loop, this); }
-
-    void stop() { should_stop = true; }
-
-    int get_id() const { return thread_id; }
-
-    bool is_running() const { return !should_stop && worker_thread.joinable(); }
+    void start();
+    void stop();
+    int getId() const;
+    bool isRunning() const;
 
    protected:
-    virtual void work_loop() = 0;
-
-    void log(const std::string& message) {
-        std::cout << "[Thread " << thread_id << "] " << message << std::endl;
-    }
+    virtual void workLoop() = 0;
+    void log(const std::string& message);
 };
 
 // Data generation thread
 class DataThread : public BaseThread {
    private:
-    std::unique_ptr<Queue<DataValue>> data_queue;
+    std::unique_ptr<Queue<DataValue>> dataQueue;
 
     // Random generators for different data types
-    std::uniform_int_distribution<> type_selector;
-    std::uniform_int_distribution<> int_generator;
-    std::uniform_real_distribution<float> float_generator;
-    std::uniform_real_distribution<double> complex_generator;
+    std::uniform_int_distribution<> typeSelector;
+    std::uniform_int_distribution<> intGenerator;
+    std::uniform_real_distribution<float> floatGenerator;
+    std::uniform_real_distribution<double> complexGenerator;
 
    public:
-    DataThread(int id)
-        : BaseThread(id),
-          data_queue(std::make_unique<Queue<DataValue>>()),
-          type_selector(0, 2),
-          int_generator(-1000, 1000),
-          float_generator(-100.0f, 100.0f),
-          complex_generator(-50.0, 50.0) {
-        log("Data thread created with queue ID: " + std::to_string(data_queue->getId()));
-        start();
-    }
+    DataThread(int id);
 
-    int get_queue_id() const { return data_queue->getId(); }
-
-    size_t get_queue_size() const { return data_queue->size(); }
-
-    bool is_queue_empty() const { return data_queue->empty(); }
+    int getQueueId() const;
+    size_t getQueueSize() const;
+    bool isQueueEmpty() const;
 
     // For testing - consume a value from the queue
-    DataValue pop_value() { return data_queue->pop(); }
+    DataValue popValue();
 
    protected:
-    void work_loop() override {
-        log("Started working");
-
-        while (!should_stop) {
-            try {
-                DataValue value = generate_random_value();
-                data_queue->push(value);
-
-                log_generated_value(value);
-
-                // Variable sleep time based on thread ID
-                std::this_thread::sleep_for(std::chrono::milliseconds(200 + (thread_id % 5) * 50));
-
-            } catch (const std::exception& e) {
-                log("Error: " + std::string(e.what()));
-                break;
-            }
-        }
-
-        log("Finished working");
-    }
+    void workLoop() override;
 
    private:
-    DataValue generate_random_value() {
-        int data_type = type_selector(gen);
+    DataValue generateRandomValue();
+    void logGeneratedValue(const DataValue& value);
+};
 
-        switch (data_type) {
-            case 0:  // int
-                return int_generator(gen);
-            case 1:  // float
-                return float_generator(gen);
-            case 2:  // complex
-                return std::complex<double>(complex_generator(gen), complex_generator(gen));
-            default:
-                return 0;  // fallback
-        }
-    }
+// Function generation thread
+class FunctionThread : public BaseThread {
+   private:
+    std::unique_ptr<Queue<ArithmeticFunction>> functionQueue;
 
-    void log_generated_value(const DataValue& value) {
-        std::string message = "Generated: ";
+    // Random generators for function creation
+    std::uniform_int_distribution<> operationSelector;  // 0-3 for +,-,*,/
+    std::uniform_int_distribution<> patternSelector;    // 0-3 for different function patterns
+    std::uniform_int_distribution<> intConstGenerator;  // for constant values
+    std::uniform_real_distribution<float> floatConstGenerator;
+    std::uniform_int_distribution<> dataTypeSelector;  // for choosing constant types
 
-        // Use std::visit with proper handling for each type
-        std::visit(
-            [&message](const auto& v) {
-                if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::complex<double>>) {
-                    // Handle complex numbers specially
-                    char imSign = v.imag() < 0 ? '-' : '+';
-                    message +=
-                        "(" + std::to_string(v.real()) + " " + imSign + " " + std::to_string(abs(v.imag())) + " * i)";
-                } else {
-                    // Handle int and float
-                    message += std::to_string(v);
-                }
-            },
-            value);
+   public:
+    FunctionThread(int id);
 
-        message += " (queue size: " + std::to_string(data_queue->size()) + ")";
-        log(message);
-    }
+    int getQueueId() const;
+    size_t getQueueSize() const;
+    bool isQueueEmpty() const;
+
+    // For testing - consume a function from the queue
+    ArithmeticFunction popFunction();
+
+   protected:
+    void workLoop() override;
+
+   private:
+    ArithmeticFunction generateRandomFunction();
+    DataValue generateRandomConstant();
+    void logGeneratedFunction(const ArithmeticFunction& func);
 };
 
 #endif  // THREADS_H

@@ -23,10 +23,22 @@ endif()
 # Include directories
 include_directories(include)
 
-# Add executable
+# Create a library for thread classes
+add_library(thread_lib src/threads.cpp)
+target_include_directories(thread_lib PUBLIC include)
+target_compile_features(thread_lib PUBLIC cxx_std_17)
+
+# Link threads library
+find_package(Threads REQUIRED)
+target_link_libraries(thread_lib PUBLIC Threads::Threads)
+
+# Add main executable
 add_executable(${PROJECT_NAME} 
     src/main.cpp
 )
+
+# Link the thread library to main executable
+target_link_libraries(${PROJECT_NAME} thread_lib)
 
 # Enable testing
 enable_testing()
