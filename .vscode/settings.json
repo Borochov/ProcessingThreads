@@ -37,8 +37,6 @@
     "C_Cpp.clang_format_fallbackStyle": "none",
     "editor.wordWrap": "on",
     // Formatting settings
-    "editor.formatOnSave": true,
-    "editor.formatOnType": true,
     "C_Cpp.formatting": "clangFormat",
     "C_Cpp.clang_format_style": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 100 }",
     "C_Cpp.clang_format_fallbackStyle": "Google",
