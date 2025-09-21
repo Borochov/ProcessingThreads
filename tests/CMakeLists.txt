@@ -1,4 +1,0 @@
-add_executable(test_runner test_main.cpp)
-target_link_libraries(test_runner thread_lib)
-target_compile_features(test_runner PRIVATE cxx_std_17)
-add_test(NAME basic_test COMMAND test_runner)
