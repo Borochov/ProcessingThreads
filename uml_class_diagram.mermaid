@@ -1,0 +1,113 @@
+classDiagram
+    class Queue~T~ {
+        -queue~T~ elements
+        -int uniqueId
+        -int maxCapacity
+        -mutex mtx
+        -condition_variable cv
+        +Queue(int capacity)
+        +push(T elem) void
+        +pop() T
+        +size() size_t
+        +empty() bool
+        +getId() int
+        +getMaxCapacity() int
+    }
+
+    class ArithmeticFunction {
+        +Operation op
+        +optional left_operand
+        +optional right_operand
+        +requiredArgs() size_t
+        +description() string
+        -valueToString(val) string
+    }
+
+    class BaseThread {
+        <<abstract>>
+        #int threadId
+        #thread workerThread
+        #atomic~bool~ shouldStop
+        #random_device rd
+        #mt19937 gen
+        +BaseThread(int id)
+        +~BaseThread()
+        +start() void
+        +stop() void
+        +getId() int
+        +isRunning() bool
+        #workLoop()* void
+        #log(string message) void
+    }
+
+    class DataThread {
+        -unique_ptr~Queue~ dataQueue
+        -uniform_int_distribution typeSelector
+        -uniform_int_distribution intGenerator
+        -uniform_real_distribution~float~ floatGenerator
+        -uniform_real_distribution~double~ complexGenerator
+        +DataThread(int id, int queueCapacity)
+        +~DataThread()
+        +getQueueId() int
+        +getQueueSize() size_t
+        +isQueueEmpty() bool
+        +popValue() DataValue
+        +pushValue(value) void
+        #workLoop() void
+        -generateRandomValue() DataValue
+        -logGeneratedValue(value) void
+    }
+
+    class FunctionThread {
+        -unique_ptr~Queue~ functionQueue
+        -uniform_int_distribution operationSelector
+        -uniform_int_distribution patternSelector
+        -uniform_int_distribution intConstGenerator
+        -uniform_real_distribution~float~ floatConstGenerator
+        -uniform_int_distribution dataTypeSelector
+        +FunctionThread(int id, int queueCapacity)
+        +~FunctionThread()
+        +getQueueId() int
+        +getQueueSize() size_t
+        +isQueueEmpty() bool
+        +popFunction() ArithmeticFunction
+        #workLoop() void
+        -generateRandomFunction() ArithmeticFunction
+        -generateRandomConstant() DataValue
+        -logGeneratedFunction(func) void
+    }
+
+    class ProcessingThread {
+        -atomic~int~& functionsProcessed
+        -int maxFunctions
+        -uniform_int_distribution queueSelector
+        -vector~unique_ptr~DataThread~~& dataThreads
+        -vector~unique_ptr~FunctionThread~~& functionThreads
+        +ProcessingThread(int id, atomic~int~& processed, int maxFunctions, dataThreads, functionThreads)
+        #workLoop() void
+        -selectTwoRandomQueues() pair~int,int~
+        -processDataToData(DataThread* source, DataThread* dest) void
+        -processFunctionWithData(FunctionThread* funcThread, DataThread* dataThread) void
+        -applyFunction(func, args) DataValue
+        -formatFunctionExecution(func, args, result) string
+        -valueToString(val) string
+    }
+
+    %% Inheritance relationships
+    BaseThread <|-- DataThread
+    BaseThread <|-- FunctionThread
+    BaseThread <|-- ProcessingThread
+
+    %% Composition relationships
+    DataThread *-- Queue : contains
+    FunctionThread *-- Queue : contains
+
+    %% Dependencies
+    ProcessingThread ..> DataThread : processes
+    ProcessingThread ..> FunctionThread : processes
+    ProcessingThread ..> ArithmeticFunction : applies
+
+    %% Notes
+    note for Queue "Template class with\ndynamic capacity\nThread-safe operations"
+    note for BaseThread "Abstract base class\nManages thread lifecycle"
+    note for ProcessingThread "Coordinates between\ndata and function threads"
